@@ -1,0 +1,22 @@
+name: pytest verification
+
+on:
+  push:
+    branches: [main]
+
+
+jobs:
+           
+  call-docker-verification:
+    name: docker-verification
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: get setup_env
+      run: |
+        echo "设置环境变量======================================"
+        python --version
+        pip --version 
+        docker --version
