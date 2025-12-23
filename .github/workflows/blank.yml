@@ -21,4 +21,4 @@ jobs:
         pip --version 
         docker --version
         pip install docker
-        python verification.y
+        python verification.py
