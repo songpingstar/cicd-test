@@ -20,3 +20,5 @@ jobs:
         python --version
         pip --version 
         docker --version
+        pip install docker
+        python verification.yml
