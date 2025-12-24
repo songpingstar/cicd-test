@@ -17,7 +17,7 @@ pip install -q --upgrade pip setuptools
 pip install hatch
 hatch version
 mkdir -p marimo/_static/assets
-hatch dep sync test
+hatch env create test
 cp frontend/index.html marimo/_static/index.html
 cp frontend/public/favicon.ico marimo/_static/favicon.ico
 
