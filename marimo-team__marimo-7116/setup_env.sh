@@ -13,8 +13,9 @@ cd /testbed/marimo
 ###############################################
 
 ##################hatch###########################
-# pip install -q --upgrade pip setuptools
+pip install -q --upgrade pip setuptools
 pip install hatch
+hatch version
 mkdir -p marimo/_static/assets
 hatch dep sync test
 cp frontend/index.html marimo/_static/index.html
