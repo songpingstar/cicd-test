@@ -4,8 +4,8 @@ import re
 import docker
 from pathlib import Path
 
-TASKS_DIR = Path(r"GPflow__GPflow-1231")
-IMAGE_NAME_TEMPLATE = "swebench/sweb.eval.x86_64.GPflow__GPflow-1231"
+TASKS_DIR = Path(r"INSTANCE_DIR")
+IMAGE_NAME_TEMPLATE = "swebench/sweb.eval.x86_64.INSTANCE_DIR"
 
 
 class DockerImageManager:
