@@ -17,9 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     vim \
     dos2unix \
     # --- Python 基础 ---
-    # python3 \
-    # python3-pip \
-    # python-is-python3 
+    python3 \
+    python3-pip \
+    python-is-python3 
 
 # 2. 安装Miniconda3（Python 3.11）
 RUN wget 'https://repo.anaconda.com/miniconda/Miniconda3-py39_23.1.0-1-Linux-x86_64.sh' -O miniconda.sh && \
