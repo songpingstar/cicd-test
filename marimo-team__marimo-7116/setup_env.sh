@@ -16,8 +16,10 @@ cd /testbed/marimo
 # pip install -q --upgrade pip setuptools
 pip install hatch
 mkdir -p marimo/_static/assets
+hatch dep sync test
 cp frontend/index.html marimo/_static/index.html
 cp frontend/public/favicon.ico marimo/_static/favicon.ico
+
 ###############################################
 
 ##################pip###########################
