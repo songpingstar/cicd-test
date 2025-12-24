@@ -9,11 +9,11 @@ from typing import Union, List
 
 # --- 配置 ---
 # 请在这里设置你的代码仓库的绝对路径
-REPO_PATH = 'pytype'
+REPO_PATH = 'GPflow'
 # 要进行测试的基础 commit 哈希
-BASE_COMMIT = '0b797cc8f8127419b0758bef409a9046d54a39bb'
+BASE_COMMIT = 'bd1e9c04b48dd5ccca9619d5eaa2595a358bdb08'
 # 实例ID，用于结果文件的顶级键
-INSTANCE_ID = 'google__pytype-1353'
+INSTANCE_ID = 'GPflow__GPflow-1231'
 
 
 # --- 路径配置 (自动计算) ---

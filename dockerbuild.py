@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 
 # ==================== 配置区域 ====================
-TASKS_DIR = Path(r"google__pytype-1353")
-IMAGE_NAME_TEMPLATE = "swebench/sweb.eval.x86_64.marimo_1776_marimo-7160"
+TASKS_DIR = Path(r"GPflow__GPflow-1231")
+IMAGE_NAME_TEMPLATE = "swebench/sweb.eval.x86_64.GPflow__GPflow-1231"
 
 # 构建选项
 FORCE_REBUILD = False  # 是否强制重新构建已存在的镜像

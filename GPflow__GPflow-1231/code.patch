@@ -1,0 +1,150 @@
+diff --git a/doc/source/notebooks/gpflow_2_upgrade/gpflow2_upgrade_guide.ipynb b/doc/source/notebooks/gpflow_2_upgrade/gpflow2_upgrade_guide.ipynb
+index 19c6b39d4..9b25117bc 100644
+--- a/doc/source/notebooks/gpflow_2_upgrade/gpflow2_upgrade_guide.ipynb
++++ b/doc/source/notebooks/gpflow_2_upgrade/gpflow2_upgrade_guide.ipynb
+@@ -199,7 +199,7 @@
+    "source": [
+     "# Periodic Base Kernel\n",
+     "\n",
+-    "The base kernel for the `Periodic` kernel must now be specified explicitly. Previously the default was  `SquaredExponential`, so to maintain the same behaviour as before this must be passed-in to the `Periodic` kernel’s initialiser. \n",
++    "The base kernel for the `Periodic` kernel must now be specified explicitly. Previously the default was  `SquaredExponential`, so to maintain the same behaviour as before this must be passed-in to the `Periodic` kernel’s initialiser (note that `active_dims` is specified in the base kernel). \n",
+     "\n",
+     "For example:\n",
+     "\n",
+diff --git a/gpflow/kernels/base.py b/gpflow/kernels/base.py
+index 07a6cfcb1..f363d51ce 100644
+--- a/gpflow/kernels/base.py
++++ b/gpflow/kernels/base.py
+@@ -36,13 +36,20 @@ def __init__(self,
+                  active_dims: Optional[Union[slice, list]] = None,
+                  name: Optional[str] = None):
+         """
+-        :param active_dims: active dimensions, has the slice type.
++        :param active_dims: active dimensions, either a slice or list of
++            indices into the columns of X.
+         :param name: optional kernel name.
+         """
+         super().__init__(name=name)
+-        if isinstance(active_dims, list):
+-            active_dims = np.array(active_dims)
+-        self._active_dims = active_dims
++        self._active_dims = self._normalize_active_dims(active_dims)
++
++    @staticmethod
++    def _normalize_active_dims(value):
++        if value is None:
++            value = slice(None, None, None)
++        if not isinstance(value, slice):
++            value = np.array(value, dtype=int)
++        return value
+ 
+     @property
+     def active_dims(self):
+@@ -50,11 +57,7 @@ def active_dims(self):
+ 
+     @active_dims.setter
+     def active_dims(self, value):
+-        if value is None:
+-            value = slice(None, None, None)
+-        if not isinstance(value, slice):
+-            value = np.array(value, dtype=int)
+-        self._active_dims = value
++        self._active_dims = self._normalize_active_dims(value)
+ 
+     def on_separate_dims(self, other):
+         """
+diff --git a/gpflow/kernels/periodic.py b/gpflow/kernels/periodic.py
+index b5043ddbb..0c8b72d5f 100644
+--- a/gpflow/kernels/periodic.py
++++ b/gpflow/kernels/periodic.py
+@@ -32,26 +32,37 @@ class Periodic(Kernel):
+     γ is the period parameter.
+ 
+     (note that usually we have a factor of 4 instead of 0.5 in front but this
+-    is absorbed into lengthscale hyperparameter).
++    is absorbed into the lengthscale hyperparameter).
+     """
+ 
+-    def __init__(self, base: Stationary, period: Union[float, List[float]] = 1.0):
++    def __init__(self, base: Stationary, period: Union[float, List[float]] = 1.0,
++                 **kwargs):
+         """
+         :param base: the base kernel to make periodic; must inherit from Stationary
+-        :param period: the period; to induce a different period per active dimention
+-            this must be initialized with an array the same length as the the number
+-            of active dimensions in the base e.g. [1., 1., 1.]
++            Note that active_dims should be specified in the base kernel.
++        :param period: the period; to induce a different period per active dimension
++            this must be initialized with an array the same length as the number
++            of active dimensions e.g. [1., 1., 1.]
+         """
+         if not isinstance(base, Stationary):
+             raise TypeError("Periodic requires a Stationary kernel as the `base`")
+ 
++        if 'active_dims' in kwargs:
++            if self._normalize_active_dims(kwargs['active_dims']) != base.active_dims:
++                raise ValueError("active_dims must be consistent with base.active_dims")
++
+         super().__init__()
+         self.base = base
+         self.period = Parameter(period, transform=positive())
+         self.base._validate_ard_active_dims(self.period)
+ 
+-    def slice(self, X, X2):
+-        return self.base.slice(X, X2)
++    @property
++    def active_dims(self):
++        return self.base.active_dims
++
++    @active_dims.setter
++    def active_dims(self, value):
++        self.base.active_dims = value
+ 
+     def K_diag(self, X: tf.Tensor) -> tf.Tensor:
+         return self.base.K_diag(X)
+@@ -61,6 +72,7 @@ def K(self, X: tf.Tensor, X2: Optional[tf.Tensor] = None) -> tf.Tensor:
+             X2 = X
+ 
+         # Introduce dummy dimension so we can use broadcasting
++        # TODO: does not support kernel broadcasting
+         f = tf.expand_dims(X, 1)  # now [N, 1, D]
+         f2 = tf.expand_dims(X2, 0)  # now [1, M, D]
+ 
+diff --git a/gpflow/kernels/stationaries.py b/gpflow/kernels/stationaries.py
+index 8f9673b04..176f83cfc 100644
+--- a/gpflow/kernels/stationaries.py
++++ b/gpflow/kernels/stationaries.py
+@@ -20,12 +20,14 @@ class Stationary(Kernel):
+ 
+     def __init__(self, variance=1.0, lengthscale=1.0, **kwargs):
+         """
+-        :param variance: the (initial) value for the variance parameter
+-        :param lengthscale: the (initial) value for the lengthscale parameter(s),
+-            to induce ARD behaviour this must be initialised as an array the same
+-            length as the the number of active dimensions e.g. [1., 1., 1.]
+-        :param kwargs: accepts `name` and `active_dims`, which is a list of
+-            length input_dim which controls which columns of X are used
++        :param variance: the (initial) value for the variance parameter.
++        :param lengthscale: the (initial) value for the lengthscale
++            parameter(s), to induce ARD behaviour this must be initialised as
++            an array the same length as the the number of active dimensions
++            e.g. [1., 1., 1.]
++        :param kwargs: accepts `name` and `active_dims`, which is a list or
++            slice of indices which controls which columns of X are used (by
++            default, all columns are used).
+         """
+         for kwarg in kwargs:
+             if kwarg not in {'name', 'active_dims'}:
+diff --git a/gpflow/utilities/ops.py b/gpflow/utilities/ops.py
+index be8911cc5..752861b53 100644
+--- a/gpflow/utilities/ops.py
++++ b/gpflow/utilities/ops.py
+@@ -36,7 +36,7 @@ def leading_transpose(tensor: tf.Tensor, perm: List[Union[int, type(...)]], lead
+             # B is 2nd element and
+             # C is 3rd element in
+             # permutation list,
+-            # leading dimentions are [1, 2, 3]
++            # leading dimensions are [1, 2, 3]
+             # which are 0th element in permutation
+             # list
+         b = leading_transpose(a, [3, -3, ..., -2])  # [C, A, ..., B]
