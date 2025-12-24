@@ -220,7 +220,7 @@ class DockerImageManager:
                 # 关键点：在 -c 前面加上 -i
                 command="/bin/bash -i -c 'cd /testbed && python run_verification.py && cp -f results.json /testbed_output/result.json 2>/dev/null || true'",
                 volumes=volumes,
-                network_mode="none",
+                #network_mode="none",
                 environment={"INSTANCE_ID": instance_id},
                 remove=True,
                 detach=True,
