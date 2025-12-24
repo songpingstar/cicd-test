@@ -21,4 +21,7 @@ jobs:
         pip --version 
         docker --version
         pip install docker
+        echo "构建镜像======================================"
+        python dockerbuild.py
+        echo "验证镜像======================================"
         python verification.py

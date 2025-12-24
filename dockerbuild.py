@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 
 # ==================== 配置区域 ====================
-TASKS_DIR = Path(r"疑难杂症\fsspec__filesystem_spec-1141")
-IMAGE_NAME_TEMPLATE = "swebench/sweb.eval.x_86_64.{repo_owner}_1776_{repo_name}-{pr_id}"
+TASKS_DIR = Path(r"google__pytype-1353")
+IMAGE_NAME_TEMPLATE = "swebench/sweb.eval.x86_64.marimo_1776_marimo-7160"
 
 # 构建选项
 FORCE_REBUILD = False  # 是否强制重新构建已存在的镜像
