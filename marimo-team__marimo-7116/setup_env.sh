@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /testbed/GPflow
+cd /testbed/marimo
 ##################pixi###########################
 # pip install -q --upgrade pip setuptools
 # pixi run make check-prereqs
@@ -14,17 +14,17 @@ cd /testbed/GPflow
 
 ##################hatch###########################
 # pip install -q --upgrade pip setuptools
-# pip install -q uv
+pip install hatch
+mkdir -p marimo/_static/assets
+cp frontend/index.html marimo/_static/index.html
+cp frontend/public/favicon.ico marimo/_static/favicon.ico
 ###############################################
 
 ##################pip###########################
-apt-get update
-apt-get install -y cmake gcc g++
-export SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL=True
-pip install --upgrade pip setuptools
-pip install -q numpy scipy pandas pytest nbformat     nbconvert ipykernel jupyter_client matplotlib pytest-xdist pytest-cov     multipledispatch mock codecov sklearn tabulate
-cd /testbed/GPflow
-pip install -e .
-pip install -r tests_requirements.txt
-pip install tensorflow==2.1.0 tensorflow-probability==0.9
+# git submodule sync
+# git submodule update --init --recursive --checkout
+# pip install -q --upgrade pip setuptools
+# pip install -e .
+# pip install -r requirements.txt
+# pip install -q --upgrade pytest
 ###############################################

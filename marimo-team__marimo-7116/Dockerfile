@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python-is-python3 
 
 # 2. 安装Miniconda3（Python 3.11）
-RUN wget 'https://repo.anaconda.com/miniconda/Miniconda3-4.5.1-Linux-x86_64.sh' -O miniconda.sh && \
+RUN wget 'https://repo.anaconda.com/miniconda/Miniconda3-py312_25.9.1-3-Linux-x86_64.sh' -O miniconda.sh && \
     bash miniconda.sh -b -p /opt/miniconda3 && \
     rm -f miniconda.sh
 
@@ -31,7 +31,7 @@ RUN wget 'https://repo.anaconda.com/miniconda/Miniconda3-4.5.1-Linux-x86_64.sh' 
 ENV PATH=/opt/miniconda3/bin:${PATH}
 
 # 初始化Conda，使其能够在shell脚本中被调用，并配置conda-forge渠道
-RUN conda config --add channels conda-forge
+RUN conda init bash && conda config --add channels conda-forge && conda config --remove channels defaults
 
 
 COPY setup_repo.sh /root/setup_repo.sh

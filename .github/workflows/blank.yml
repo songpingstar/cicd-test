@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
 env:
-  INSTANCE_DIR: GPflow__GPflow-1231
+  INSTANCE_DIR: marimo-team__marimo-7116
 
 jobs:
            

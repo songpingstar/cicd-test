@@ -9,11 +9,11 @@ from typing import Union, List
 
 # --- 配置 ---
 # 请在这里设置你的代码仓库的绝对路径
-REPO_PATH = 'GPflow'
+REPO_PATH = 'marimo'
 # 要进行测试的基础 commit 哈希
-BASE_COMMIT = 'bd1e9c04b48dd5ccca9619d5eaa2595a358bdb08'
+BASE_COMMIT = '964b5ef771166bd0de9f3fb33597bc6ba082841f'
 # 实例ID，用于结果文件的顶级键
-INSTANCE_ID = 'GPflow__GPflow-1231'
+INSTANCE_ID = 'marimo-team__marimo-7116'
 
 
 # --- 路径配置 (自动计算) ---
@@ -217,7 +217,7 @@ def run_all_tests_and_get_results(test_files: List[str]) -> Union[dict, None]:
             existing_test_files.append(file_path_str)
 
     # 将动态获取的测试文件列表添加到 command 中
-    command=["pytest"] + existing_test_files + [f"--junitxml={str(report_file)}"]
+    command=["hatch", "run", "+py=3.12", "test:test"] + existing_test_files + [f"--junitxml={str(report_file)}"]
 
     # 打印执行的命令
     print(f"{Colors.BLUE}   -> Executing: pytest {' '.join(test_files)}{Colors.ENDC}")

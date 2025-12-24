@@ -1,0 +1,40 @@
+{
+    "instance_id": "marimo-team__marimo-7116",
+    "patch": "diff --git a/marimo/_server/api/endpoints/login.py b/marimo/_server/api/endpoints/login.py\nindex aa5e623ce91..6c9000f4cd2 100644\n--- a/marimo/_server/api/endpoints/login.py\n+++ b/marimo/_server/api/endpoints/login.py\n@@ -128,7 +128,7 @@ async def login_submit(request: Request) -> Response:\n     elif request.user.is_authenticated:\n         return RedirectResponse(redirect_url, 302)\n \n-    base_url = AppState(request).base_url\n+    base_url = _with_trailing_slash(AppState(request).base_url or \"/\")\n     html = LOGIN_PAGE.format(error=error, base_url=base_url)\n     return HTMLResponse(\n         content=html,\n",
+    "repo": "marimo-team/marimo",
+    "base_commit": "964b5ef771166bd0de9f3fb33597bc6ba082841f",
+    "hints_text": "",
+    "created_at": "2025-11-07T16:42:19Z",
+    "test_patch": "diff --git a/tests/_server/api/endpoints/test_login.py b/tests/_server/api/endpoints/test_login.py\nindex b32383c4fad..8977ff56e44 100644\n--- a/tests/_server/api/endpoints/test_login.py\n+++ b/tests/_server/api/endpoints/test_login.py\n@@ -159,3 +159,41 @@ def test_login_submit_with_malformed_data(client: TestClient):\n def test_login_page_method_not_allowed(client: TestClient):\n     response = client.put(\"/login\")\n     assert response.status_code == 405\n+\n+\n+def test_login_submit_multiple_invalid_attempts(client: TestClient):\n+    \"\"\"Test that multiple failed login attempts still show the login form correctly.\"\"\"\n+    # First invalid attempt\n+    response = client.post(\"/login\", data={\"password\": \"wrong_password\"})\n+    assert response.status_code == 200\n+    assert \"Invalid password\" in response.text\n+    assert 'action=\"/auth/login\"' in response.text\n+\n+    # Second invalid attempt - this should still work\n+    response = client.post(\"/login\", data={\"password\": \"wrong_password2\"})\n+    assert response.status_code == 200\n+    assert \"Invalid password\" in response.text\n+    assert 'action=\"/auth/login\"' in response.text\n+\n+    # Third attempt with correct password should succeed\n+    response = client.post(\"/login\", data={\"password\": str(AUTH_TOKEN)})\n+    assert response.status_code == 302\n+    assert response.headers[\"location\"] == \"/\"\n+\n+\n+def test_login_submit_invalid_password_with_base_url():\n+    \"\"\"Test that invalid login with base_url shows correct form action.\"\"\"\n+    app = create_app(base_url=\"/app\")\n+    client = TestClient(app, follow_redirects=False)\n+\n+    # First invalid attempt\n+    response = client.post(\"/app/login\", data={\"password\": \"wrong_password\"})\n+    assert response.status_code == 200\n+    assert \"Invalid password\" in response.text\n+    assert 'action=\"/app/auth/login\"' in response.text\n+\n+    # Second invalid attempt\n+    response = client.post(\"/app/login\", data={\"password\": \"wrong_password2\"})\n+    assert response.status_code == 200\n+    assert \"Invalid password\" in response.text\n+    assert 'action=\"/app/auth/login\"' in response.text\n",
+    "problem_statement": "Second token attempt returns {\"detail\":\"Not Found\"}\n### Describe the bug\n\n## Quick summary\nIn the [minimal authentication feature](https://docs.marimo.io/guides/deploying/authentication/#ways-to-authenticate) that Marimo provides, there is currently a bug which allows user to type his password on his first attempt but on his second attempt any password/token inserted leads to a JSON response {\"detail\":\"Not Found\"}. This leads to confusion as a simple typo in password/token leads to strange behavior. Moreover, the behavior cannot be intuitively countered e.g. by simply going back in browser and trying it again, one has to close the tab and re-open it.\n\n## Observed behavior\nWhen I run a marimo app as `uv run marimo run app.py --token --token-password=123` and I visit `http://127.0.0.1:2718` in my browser, I see a minimal password/token screen as mentioned in the [docs](https://docs.marimo.io/guides/deploying/authentication/), see screenshot:\n\n<img width=\"1918\" height=\"846\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/bcd5b9e4-214d-4b57-bda0-5d682c7bf3f8\" />\n\nIf I insert a wrong password on first attempt (e.g. `12` instead of `123`), I see an \"Invalid password\" screen:\n\n<img width=\"1919\" height=\"843\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/18290c87-0197-4466-9372-1644b6978e15\" />\n\nNext suppose I provide any password (correct or incorrect, does not matter) and click Login. I see this screen:\n\n<img width=\"1919\" height=\"741\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/0e90bdd9-989f-42f7-9e13-3ce3227cbcbb\" />\n\n## Expected behavior\nWhen I, as a user of a \"marimo run\" server, make a mistake on my first password/token attempt, I am free to correct myself and insert a correct password that gets me to my notebook.\n\n## Reproducible\nYes\n\n## Minimal reproducible example:\n\n```\n# app.py\nimport marimo\n\n__generated_with = \"0.17.7\"\napp = marimo.App(width=\"medium\")\n\n\n@app.cell\ndef _():\n    import marimo as mo\n    mo.md(\"Here be dragons!!\")\n    return\n\n\nif __name__ == \"__main__\":\n    app.run()\n```\n\ncmd: `marimo run app.py --token --token-password=123`\n\nOpen a new private browser tab, go to `http://127.0.0.1:2718/`. Make a typo in your password/token in your first attempt. Try to provide a new password/token in second attempt. You should get a {\"detail\": \"Not Found\"} JSON response, despite that you may have entered a correct password/token this time.\n\n## Technical information\nMarimo: 0.17.7\nPython: 3.12.10\nOS: Windows 11\nBrowser: I have tried Firefox 144.0.2 and Chrome 141.0.7390.123\n\n## Other context\nI am aware that there are different ways to authenticate, e.g. using FastAPI and custom middleware etc. However, in my use case it is best to rely on Marimo's simple authentication and Marimo's authentication does not work if user misspells his token/password.\n\n### Will you submit a PR?\n\n- [ ] Yes\n\n### Environment\n\n<details>\n\n```\nReplace this line with the output of marimo env. Leave the backticks in place.\n```\n\n</details>\n\n\n### Code to reproduce\n\n_No response_\n",
+    "environment_setup_commit": "964b5ef771166bd0de9f3fb33597bc6ba082841f",
+    "pr_url": "https://github.com/marimo-team/marimo/pull/7116",
+    "issue_url": "https://github.com/marimo-team/marimo/issues/7115",
+    "issue_numbers": [
+        "7115"
+    ],
+    "FAIL_TO_PASS": [
+        "tests/_server/api/endpoints/test_login.py::test_login_submit_invalid_password_with_base_url",
+        "tests/_server/api/endpoints/test_login.py::test_login_submit_multiple_invalid_attempts"
+    ],
+    "PASS_TO_PASS": [
+        "tests/_server/api/endpoints/test_login.py::test_login_page_method_not_allowed",
+        "tests/_server/api/endpoints/test_login.py::test_login_page_returns_html",
+        "tests/_server/api/endpoints/test_login.py::test_login_page_security_headers",
+        "tests/_server/api/endpoints/test_login.py::test_login_page_with_base_url",
+        "tests/_server/api/endpoints/test_login.py::test_login_submit_with_authenticated_user",
+        "tests/_server/api/endpoints/test_login.py::test_login_submit_with_base_url",
+        "tests/_server/api/endpoints/test_login.py::test_login_submit_with_base_url_trailing_slash",
+        "tests/_server/api/endpoints/test_login.py::test_login_submit_with_empty_password",
+        "tests/_server/api/endpoints/test_login.py::test_login_submit_with_external_redirect",
+        "tests/_server/api/endpoints/test_login.py::test_login_submit_with_invalid_password",
+        "tests/_server/api/endpoints/test_login.py::test_login_submit_with_malformed_data",
+        "tests/_server/api/endpoints/test_login.py::test_login_submit_with_next_url",
+        "tests/_server/api/endpoints/test_login.py::test_login_submit_with_next_url_and_base_url",
+        "tests/_server/api/endpoints/test_login.py::test_login_submit_with_valid_password"
+    ],
+    "language": "Python",
+    "content_category": [
+        "通用工具"
+    ]
+}
